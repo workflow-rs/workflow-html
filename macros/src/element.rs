@@ -109,7 +109,7 @@ impl<'a> ToTokens for Element<'a>{
             let tag = self.tag.name.to_string();
             let is_fragment = tag.len()==0;
             quote!{
-                flow_html::Element {
+                workflow_html::Element {
                     is_fragment:#is_fragment,
                     tag:#tag,
                     #attributes,

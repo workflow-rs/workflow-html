@@ -99,7 +99,7 @@ impl<T:Render> Render for Element<'_, T>{
 mod test{
     //cargo test -- --nocapture --test-threads=1
     use crate::tree;
-    use crate as flow_html;
+    use crate as workflow_html;
     use crate::Render;
     use crate::renderable;
     use crate::ElementDefaults;

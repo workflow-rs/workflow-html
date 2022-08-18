@@ -94,13 +94,13 @@ impl<'a> Attributes<'a>{
             let mut append = true;
             let value = match attr.attr_type{
                 AttributeType::Bool=>{
-                    quote!{flow_html::AttributeValue::Bool(#value)}
+                    quote!{workflow_html::AttributeValue::Bool(#value)}
                 }
                 AttributeType::Str=>{
-                    quote!{flow_html::AttributeValue::Str(#value)}
+                    quote!{workflow_html::AttributeValue::Str(#value)}
                 }
                 AttributeType::String=>{
-                    quote!{flow_html::AttributeValue::Str(&#value)}
+                    quote!{workflow_html::AttributeValue::Str(&#value)}
                 }
                 AttributeType::Ref=>{
                     ref_field = quote!{reff: Some((#name, #value))};

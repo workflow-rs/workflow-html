@@ -198,7 +198,7 @@ pub fn renderable(attr: TokenStream, item: TokenStream) -> TokenStream {
                     attrs_ts_vec.push(quote!(
                         match &self.#field_name{
                             Some(value)=>{
-                                attrs.push(format!(#fmt_str, flow_html::escape_attr(value)));
+                                attrs.push(format!(#fmt_str, workflow_html::escape_attr(value)));
                             }
                             None=>{
 
@@ -207,7 +207,7 @@ pub fn renderable(attr: TokenStream, item: TokenStream) -> TokenStream {
                     ));
                 }else{
                     attrs_ts_vec.push(quote!(
-                        attrs.push(format!(#fmt_str, flow_html::escape_attr(#borrow self.#field_name)));
+                        attrs.push(format!(#fmt_str, workflow_html::escape_attr(#borrow self.#field_name)));
                     ));
                 }
                 
@@ -229,14 +229,14 @@ pub fn renderable(attr: TokenStream, item: TokenStream) -> TokenStream {
             //#children_field_ts
         }
 
-        impl #impl_generics flow_html::Render for #struct_name #type_generics #where_clause {
+        impl #impl_generics workflow_html::Render for #struct_name #type_generics #where_clause {
             fn render<W:core::fmt::Write>(&self, w:&mut W)->core::fmt::Result{
                 let attr = self.get_attributes();
                 let children = self.get_children();
                 write!(w, #format_str, attr, children)
             }
         }
-        impl #impl_generics flow_html::ElementDefaults for #struct_name #type_generics #where_clause {
+        impl #impl_generics workflow_html::ElementDefaults for #struct_name #type_generics #where_clause {
             fn _get_attributes(&self)->String{
                 let mut attrs:Vec<String> = vec![];
                 #(#attrs_ts_vec)*
