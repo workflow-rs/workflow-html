@@ -2,27 +2,28 @@ pub mod render;
 pub mod escape;
 pub mod utils;
 pub mod interface;
-pub use interface::Html;
+pub use interface::{Hooks, Html};
 
 pub use workflow_html_macros::{html, tree, html_str, renderable};
-pub use render::{Render, Result, Write};
+pub use render::{Render, Renderables, Result, Write};
 pub use escape::{escape_attr, escape_html};
 use std::collections::BTreeMap;
 pub use utils::{Element as WebElement, document, ElementResult};
+use std::sync::Arc;
 
-#[derive(Debug)]
-pub enum AttributeValue<'a>{
+#[derive(Debug, Clone)]
+pub enum AttributeValue{
     Bool(bool),
-    Str(&'a str)
+    Str(String)
 }
 
-#[derive(Debug, Default)]
-pub struct Element<'a, T:Render>{
+#[derive(Debug, Default, Clone)]
+pub struct Element<T:Render>{
     pub is_fragment:bool,
-    pub tag:&'a str,
-    pub attributes:BTreeMap<&'a str, AttributeValue<'a>>,
+    pub tag:String,
+    pub attributes:BTreeMap<String, AttributeValue>,
     pub children:Option<T>,
-    pub reff:Option<(&'a str, &'a str)>
+    pub reff:Option<(String, String)>
 }
 
 pub trait ElementDefaults {
@@ -37,10 +38,16 @@ pub trait ElementDefaults {
     }
 }
 
-impl<T:Render> Render for Element<'_, T>{
-    fn render_node(self, parent:&mut WebElement, map:&mut BTreeMap<String, WebElement>)->ElementResult<()>{
+impl<T:Render+Clone+'static> Render for Element<T>{
+    fn render_node(
+        self,
+        parent:&mut WebElement,
+        map:&mut Hooks,
+        renderables:&mut Renderables
+    )->ElementResult<()>{
+        renderables.push(Arc::new(self.clone()));
         let mut el = document()
-        .create_element(self.tag)?;
+        .create_element(&self.tag)?;
 
         for (key, value) in &self.attributes{
             match value{
@@ -55,40 +62,40 @@ impl<T:Render> Render for Element<'_, T>{
             }
         }
         if let Some((key, value)) = self.reff{
-            el.set_attribute("data-ref", value)?;
+            el.set_attribute("data-ref", &value)?;
             map.insert(key.to_string(), el.clone());
         }
         if let Some(children) = self.children{
-            children.render_node(&mut el, map)?;
+            children.render_node(&mut el, map, renderables)?;
         }
 
         parent.append_child(&el)?;
         Ok(())
     }
-    fn render<W:Write>(&self, w:&mut W)->Result{
+    fn render(&self, w:&mut Vec<String>)->ElementResult<()>{
         if self.is_fragment{
             if let Some(children) = &self.children{
                 children.render(w)?;
             }
         }else{
-            write!(w, "<{}", self.tag)?;
+            w.push(format!("<{}", self.tag));
             for (key, value) in &self.attributes{
                 match value{
                     AttributeValue::Bool(v)=>{
                         if *v {
-                            write!(w, " {}", key)?;
+                            w.push(format!(" {}", key));
                         }
                     }
                     AttributeValue::Str(v)=>{
-                        write!(w, " {}=\"{}\"", key, (*v))?;
+                        w.push(format!(" {}=\"{}\"", key, (*v)));
                     }
                 }
             }
-            write!(w, ">")?;
+            w.push(">".to_string());
             if let Some(children) = &self.children{
                 children.render(w)?;
             }
-            write!(w, "</{}>", self.tag)?;
+            w.push(format!("</{}>", self.tag));
         }
         Ok(())
     }
@@ -154,15 +161,15 @@ mod test{
         let disabled = false;
         let selected = "1";
         
-
+        /* 
         #[renderable(flow-select)]
         #[allow(unused_variables)]
-        struct FlowSelect<'a, R:Render>{
+        struct FlowSelect{
             #[attr(name="is-active")]
             pub active:bool,
-            pub selected:&'a str,
+            pub selected:String,
             pub name:String,
-            pub children:Option<R>,
+            pub children:Option<Vec<std::sync::Arc<dyn Render>>>,
             pub label:Option<String>
         }
         
@@ -215,6 +222,7 @@ mod test{
             result,
             "<div active class=\"abc\" data-user-name=\"test-node\" string2=\"string2 value\" user=\"123\">123helloworld123123123123true1.2<h1>hello 123123</h1>1011121314<h3>single child</h3><flow-select is-active selected=\"&lt;1&amp;2&gt;&quot;3\" name=\"aaa\"></flow-select><div class=\"abc\"></div><flow-select is-active selected=\"1\" name=\"bbb\"><flow text=\"abc\"></flow><flow-menu-item text=\"abc\" value=\"abc\"></flow-menu-item></flow-select></div>"
         );
+        */
     }
 
     fn print_hr<'a>(_title: &'a str){

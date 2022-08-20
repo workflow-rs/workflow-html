@@ -223,17 +223,18 @@ pub fn renderable(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     //set_attributes(struct_name.to_string(), field_names);
     let ts = quote!(
-        #[derive(Debug, Default)]
+        #[derive(Debug, Clone, Default)]
         pub struct #struct_name #struct_params #where_clause {
             #( #field_visibility_vec #field_ident_vec : #field_type_vec ),*,
             //#children_field_ts
         }
 
         impl #impl_generics workflow_html::Render for #struct_name #type_generics #where_clause {
-            fn render<W:core::fmt::Write>(&self, w:&mut W)->core::fmt::Result{
+            fn render(&self, w:&mut Vec<String>)->workflow_html::ElementResult<()>{
                 let attr = self.get_attributes();
                 let children = self.get_children();
-                write!(w, #format_str, attr, children)
+                w.push(format!(#format_str, attr, children));
+                Ok(())
             }
         }
         impl #impl_generics workflow_html::ElementDefaults for #struct_name #type_generics #where_clause {
@@ -254,6 +255,6 @@ pub fn renderable(attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
     );
-    //println!("\n===========> element ts: <===========\n{}", ts);
+    //println!("\n===========> element({}) ts: <===========\n{}", struct_name, ts);
     ts.into()
 } 

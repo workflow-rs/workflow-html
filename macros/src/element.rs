@@ -83,6 +83,12 @@ impl<'a> Element<'a>{
             }
         }
     }
+    fn has_children(&self) -> bool{
+        match &self.children{
+            Some(nodes)=>nodes.len() > 0,
+            None=>false
+        }
+    }
 }
 
 impl<'a> ToTokens for Element<'a>{
@@ -99,11 +105,19 @@ impl<'a> ToTokens for Element<'a>{
             */
             let mut properties = self.tag.attributes.to_properties();//names);
             //println!("properties: {:?}", properties);
-            properties.push(children);
-            quote!(#name {
-                #(#properties),*,
-                ..Default::default()
-            })
+            if self.has_children(){
+                properties.push(children);
+            }
+            if properties.len() == 0 {
+                quote!(#name {
+                    ..Default::default()
+                })
+            }else{
+                quote!(#name {
+                    #(#properties),*,
+                    ..Default::default()
+                })
+            }
         }else{
             let attributes = self.tag.attributes.to_token_stream();
             let tag = self.tag.name.to_string();
@@ -111,7 +125,7 @@ impl<'a> ToTokens for Element<'a>{
             quote!{
                 workflow_html::Element {
                     is_fragment:#is_fragment,
-                    tag:#tag,
+                    tag:String::from(#tag),
                     #attributes,
                     #children
                 }
@@ -202,6 +216,9 @@ pub struct Nodes<'a>{
 }
 
 impl<'a> Nodes<'a>{
+    pub fn len(&self)->usize{
+        self.list.len()
+    }
     pub fn get_tuples(&self)->TokenStream{
         if self.list.len() == 1{
             let node = &self.list[0];

@@ -50,6 +50,14 @@ impl<'a> Attributes<'a>{
         for attr in &self.list{
             let name = &attr.name;
             let value = match attr.attr_type{
+                AttributeType::Str=>{
+                    if attr.value.is_some(){
+                        let value = attr.get_value();
+                        quote!(:String::from(#value))
+                    }else{
+                        quote!(:String::from(#name))
+                    }
+                }
                 AttributeType::String=>{
                     if attr.value.is_some(){
                         let value = attr.get_value();
@@ -97,20 +105,20 @@ impl<'a> Attributes<'a>{
                     quote!{workflow_html::AttributeValue::Bool(#value)}
                 }
                 AttributeType::Str=>{
-                    quote!{workflow_html::AttributeValue::Str(#value)}
+                    quote!{workflow_html::AttributeValue::Str(String::from(#value))}
                 }
                 AttributeType::String=>{
-                    quote!{workflow_html::AttributeValue::Str(&#value)}
+                    quote!{workflow_html::AttributeValue::Str(String::from(#value))}
                 }
                 AttributeType::Ref=>{
-                    ref_field = quote!{reff: Some((#name, #value))};
+                    ref_field = quote!{reff: Some((String::from(#name), String::from(#value)))};
                     append = false;
                     quote!()
                 }
             };
             if append{
                 attrs.push(quote!(
-                    map.insert(#name, #value);
+                    map.insert(String::from(#name), #value);
                 ));
             }
         }

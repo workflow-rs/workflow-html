@@ -1,25 +1,27 @@
 pub use std::fmt::{Result, Write};
+pub use std::sync::Arc;
 use crate::utils::{ElementResult, Element, document};
 use std::collections::BTreeMap;
 use crate::Html;
+use crate::interface::Hooks;
 
+pub type Renderables = Vec<Arc<dyn Render>>;
 
-/*
-pub trait RenderBase:Sized{
-    fn render_html<W:Write>(self, _w:&mut W)->Result;
-}
-*/
-pub trait Render:Sized{
+pub trait Render{
     fn html(&self)->String{
-        let mut buf = String::from("");
+        let mut buf = vec![];
         self.render(&mut buf).unwrap();
-        buf
+        buf.join("")
     }
     // fn render_tree(self)->ElementResult<(Vec<Element>, BTreeMap<String, Element>)>{
-    fn render_tree(self)->ElementResult<Html>{
+    fn render_tree(self)->ElementResult<Html>
+    where Self: Sized
+    {
         let mut parent = document().create_element("div").unwrap();
         //parent.set_attribute("class", "temp-root")?;
-        let map = self.render_tree_into(&mut parent)?;
+        let mut renderable = vec![];
+        //renderable.push((*self).clone());
+        let map = self.render_tree_into(&mut parent, &mut renderable)?;
         let mut list = vec![];
         let children = parent.children();
         let len = children.length();
@@ -28,56 +30,71 @@ pub trait Render:Sized{
                 list.push(child);
             }
         }
-        Ok(Html::new(list, map)?)
+        
+        Ok(Html::new(list, map, renderable)?)
     }
-    fn render_tree_into(self, parent: &mut Element)->ElementResult<BTreeMap<String, Element>>{
+    fn render_tree_into(self, parent: &mut Element, renderables:&mut Renderables)->ElementResult<BTreeMap<String, Element>>
+    where Self: Sized
+    {
         let mut map = BTreeMap::new();
-        self.render_node(parent, &mut map)?;
+        self.render_node(parent, &mut map, renderables)?;
         Ok(map)
     }
     
-    fn render_node(self, _parent:&mut Element, _map:&mut BTreeMap<String, Element>)->ElementResult<()>{
+    fn render_node(self, _parent:&mut Element, _map:&mut Hooks, _renderables:&mut Renderables)->ElementResult<()>
+    where Self: Sized
+    {
         Ok(())
     }
 
-    fn render<W:Write>(&self, w:&mut W)->Result;
+    fn render(&self, _w: &mut Vec<String>)->ElementResult<()>;
 }
 
 
 //impl Render for () {}
-//impl Render for &str {}
+
 impl Render for () {
-    fn render<W:Write>(&self, _w:&mut W)->Result{
+    fn render(&self, _w: &mut Vec<String>)->ElementResult<()>{
         Ok(())
     }
 }
 
 impl Render for &str {
-    fn render<W:Write>(&self, w:&mut W)->Result{
-        write!(w, "{}", self)
+    fn render(&self, _w: &mut Vec<String>)->ElementResult<()>{
+        Ok(())
     }
-    fn render_node(self, parent:&mut Element, _map:&mut BTreeMap<String, Element>)->ElementResult<()>{
+    fn render_node(
+        self,
+        parent:&mut Element,
+        _map:&mut Hooks,
+        _renderables:&mut Renderables
+    )->ElementResult<()>{
         let el = document().create_text_node(self);
         parent.append_child(&el)?;
         Ok(())
     }
 }
 
+
 macro_rules! impl_tuple {
     ($($ident:ident)+) => {
-        //impl<$($ident: Render,)+> Render for ($($ident,)+) {}
         impl<$($ident: Render,)+> Render for ($($ident,)+) {
             #[inline]
             #[allow(non_snake_case)]
-            fn render<W:Write>(&self, w:&mut W)->Result{
+            fn render(&self, w: &mut Vec<String>)->ElementResult<()>{
                 let ($($ident,)+) = self;
                 $($ident.render(w)?;)+
                 Ok(())
             }
             #[allow(non_snake_case)]
-            fn render_node(self, parent:&mut Element, map:&mut BTreeMap<String, Element>)->ElementResult<()>{
+            fn render_node(
+                self,
+                parent:&mut Element,
+                map:&mut Hooks,
+                renderables:&mut Renderables
+            )->ElementResult<()>{
                 let ($($ident,)+) = self;
-                $($ident.render_node(parent, map)?;)+
+                $($ident.render_node(parent, map, renderables)?;)+
                 Ok(())
             }
         }
@@ -87,12 +104,17 @@ macro_rules! impl_tuple {
 macro_rules! impl_types {
     ($($ident:ident)+) => {
         $(
-            //impl Render for $ident {}
             impl Render for $ident {
-                fn render<W:Write>(&self, w:&mut W)->Result{
-                    write!(w, "{}", self)
+                fn render(&self, w: &mut Vec<String>)->ElementResult<()>{
+                    w.push(format!("{}", self));
+                    Ok(())
                 }
-                fn render_node(self, parent:&mut Element, _map:&mut BTreeMap<String, Element>)->ElementResult<()>{
+                fn render_node(
+                    self,
+                    parent:&mut Element,
+                    _map:&mut Hooks,
+                    _renderables:&mut Renderables
+                )->ElementResult<()>{
                     let el = document().create_text_node(&format!("{}", self));
                     parent.append_child(&el)?;
                     Ok(())

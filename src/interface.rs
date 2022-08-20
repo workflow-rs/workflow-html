@@ -1,16 +1,31 @@
 use std::collections::BTreeMap;
 pub use crate::utils::{Element, document, ElementResult};
+use crate::render::Renderables;
 
-pub struct Html {
-    pub roots: Vec<Element>,
-    pub hooks: BTreeMap<String, Element>,
+pub type Hooks = BTreeMap<String, Element>;
+
+trait A{
+    fn html(&self)->String;
 }
 
-impl Html {
-    pub fn new(roots : Vec<Element>, hooks : BTreeMap<String, Element>) -> ElementResult<Html> {
+pub struct Html{
+    pub roots: Vec<Element>,
+    pub hooks: Hooks,
+    pub renderables: Renderables
+}
+
+//pub type Html_ = Html<dyn Renderable>;
+
+impl Html{
+    pub fn new(
+        roots : Vec<Element>,
+        hooks : Hooks,
+        renderables:Renderables
+    ) -> ElementResult<Html> {
         let html = Html {
             roots,
-            hooks
+            hooks,
+            renderables
         };
         Ok(html)
     }
@@ -19,7 +34,7 @@ impl Html {
         &self.roots
     }
 
-    pub fn hooks<'html>(&'html self) -> &'html BTreeMap<String,Element> {
+    pub fn hooks<'html>(&'html self) -> &'html Hooks {
         &self.hooks
     }
 
