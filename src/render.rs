@@ -75,6 +75,27 @@ impl Render for &str {
     }
 }
 
+impl<T:Render+Clone> Render for Vec<T>{
+    fn render(&self, list: &mut Vec<std::string::String>) -> ElementResult<()>{
+        for item in self{
+            item.render(list)?;
+        }
+        Ok(())
+    }
+
+    fn render_node(
+        self,
+        parent:&mut Element,
+        map:&mut Hooks,
+        renderables:&mut Renderables
+    )->ElementResult<()>{
+        for item in self{
+            item.render_node(parent, map, renderables)?;
+        }
+        Ok(())
+    }
+}
+
 
 macro_rules! impl_tuple {
     ($($ident:ident)+) => {
