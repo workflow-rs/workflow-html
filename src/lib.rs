@@ -108,8 +108,8 @@ mod test{
     use crate::tree;
     use crate as workflow_html;
     use crate::Render;
-    use crate::renderable;
-    use crate::ElementDefaults;
+    //use crate::renderable;
+    //use crate::ElementDefaults;
     #[test]
     pub fn simple_html(){
         self::print_hr("simple_html");
@@ -152,7 +152,7 @@ mod test{
     #[test]
     pub fn complex_html(){
         self::print_hr("complex_html");
-        let world  = "world";
+        /*let world  = "world";
         let num  = 123;
         let string  = "123".to_string();
         let string2  = "string2 value".to_string();
@@ -161,7 +161,7 @@ mod test{
         let disabled = false;
         let selected = "1";
         
-        /* 
+        
         #[renderable(flow-select)]
         #[allow(unused_variables)]
         struct FlowSelect{
