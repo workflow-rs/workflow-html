@@ -2,6 +2,17 @@
 name = "workflow-html"
 version = "0.1.0"
 edition = "2021"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/workflow-rs/workflow-html"
+keywords = ["html","template"]
+categories = ["web-programming::http-client","template-engine"]
+exclude = ["/.*", "/test"]
+description = """
+HTML templating engine for run-time DOM injections
+"""
+
+[lib]
+crate-type = ["cdylib", "lib"]
 
 [dependencies]
 workflow-html-macros={path="./macros"}
