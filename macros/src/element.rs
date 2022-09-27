@@ -103,7 +103,7 @@ impl<'a> ToTokens for Element<'a>{
                 None=>Arc::new(vec![])
             };
             */
-            let mut properties = self.tag.attributes.to_properties();//names);
+            let (mut properties, events) = self.tag.attributes.to_properties();//names);
             //println!("properties: {:?}", properties);
             if self.has_children(){
                 properties.push(children);
@@ -111,12 +111,12 @@ impl<'a> ToTokens for Element<'a>{
             if properties.len() == 0 {
                 quote!(#name {
                     ..Default::default()
-                })
+                }#(#events)*)
             }else{
                 quote!(#name {
                     #(#properties),*,
                     ..Default::default()
-                })
+                }#(#events)*)
             }
         }else{
             let attributes = self.tag.attributes.to_token_stream();

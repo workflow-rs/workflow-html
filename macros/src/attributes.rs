@@ -1,4 +1,4 @@
-use proc_macro2::{TokenStream, Ident, Literal/*, Span*/};
+use proc_macro2::{TokenStream, Ident, Literal, Span};
 use quote::{quote, ToTokens};
 use syn::{
     Block,
@@ -16,9 +16,13 @@ pub type AttributeName = Punctuated<Ident, Token![-]>;
 
 pub trait AttributeNameString {
     fn to_string(&self)->String;
+    fn to_property_name(&self)->Ident;
 }
 
 impl AttributeNameString for AttributeName{
+    fn to_property_name(&self)->Ident{
+        Ident::new(&self.to_string().replace("-", "_"), Span::call_site())
+    }
     fn to_string(&self)->String{
         let mut items = self.iter()
             .map(|a| a.to_string());
@@ -44,27 +48,44 @@ impl<'a> Attributes<'a>{
     pub fn empty()->Self{
         Self{list:vec![]}
     }
-    pub fn to_properties(&self/*, names:Arc<Vec<String>>*/)->Vec<TokenStream>{
+    pub fn to_properties(&self)->(Vec<TokenStream>, Vec<TokenStream>){
         let mut properties = vec![];
+        let mut events = vec![];
         //let mut used = vec![];
+        let mut append:bool;
         for attr in &self.list{
-            let name = &attr.name;
+            append = true;
+            let name_str = &attr.name.to_string();
+            let name = &attr.name.to_property_name();
             let value = match attr.attr_type{
                 AttributeType::Str=>{
                     if attr.value.is_some(){
                         let value = attr.get_value();
-                        quote!(:String::from(#value))
+                        quote!(:String::from(#value).into())
                     }else{
-                        quote!(:String::from(#name))
+                        quote!(:String::from(#name).into())
                     }
                 }
                 AttributeType::String=>{
                     if attr.value.is_some(){
                         let value = attr.get_value();
-                        quote!(:&#value)
+                        quote!(:&#value.into())
                     }else{
-                        quote!(:&#name)
+                        quote!(:&#name.into())
                     }
+                }
+                AttributeType::Event=>{
+                    append = false;
+                    if attr.value.is_some(){
+                        let value = attr.get_value();
+                        events.push(quote!(
+                            .on(#name_str, Box::new(move |target|{
+                                #value
+                                Ok(())
+                            }))
+                        ));
+                    }
+                    quote!()
                 }
                 _=>{
                     if attr.value.is_some(){
@@ -76,9 +97,11 @@ impl<'a> Attributes<'a>{
                 }
             };
             //used.push(name.to_string());
-            properties.push(quote!(
-                #name #value
-            ));
+            if append{
+                properties.push(quote!(
+                    #name #value
+                ));
+            }
         }
         /*
         println!("used: {:?} , names:{:?}", used, names);
@@ -91,7 +114,7 @@ impl<'a> Attributes<'a>{
             }
         }
         */
-        properties
+        (properties, events)
     }
     pub fn to_token_stream(&self)->TokenStream{
         let mut attrs = vec![];
@@ -112,6 +135,10 @@ impl<'a> Attributes<'a>{
                 }
                 AttributeType::Ref=>{
                     ref_field = quote!{reff: Some((String::from(#name), String::from(#value)))};
+                    append = false;
+                    quote!()
+                }
+                AttributeType::Event=>{
                     append = false;
                     quote!()
                 }
@@ -137,13 +164,15 @@ impl<'a> Attributes<'a>{
 pub enum AttributeValue<'a>{
     Block(Block),
     Literal(Literal),
+    Path(syn::punctuated::Punctuated<syn::PathSegment, Token!(::)>),
     _Str(&'a str)
 }
 pub enum AttributeType{
     Bool,
     Str,
     String,
-    Ref
+    Ref,
+    Event
 }
 pub struct Attribute<'a>{
     pub name: AttributeName,
@@ -173,6 +202,9 @@ impl<'a> Attribute<'a>{
                         quote!(#v).into_token_stream()
                     }
                     AttributeValue::_Str(v)=>{
+                        quote!(#v).into_token_stream()
+                    }
+                    AttributeValue::Path(v)=>{
                         quote!(#v).into_token_stream()
                     }
                 }
@@ -207,18 +239,24 @@ impl<'a> Parse for Attribute<'a>{
         }else if input.peek(Token![@]){
             input.parse::<Token![@]>()?;
             attr_type = AttributeType::Ref;
+        }else if input.peek(Token![!]){
+            input.parse::<Token![!]>()?;
+            attr_type = AttributeType::Event;
         }
         
         let name = AttributeName::parse_separated_nonempty_with(input, syn::Ident::parse_any)?;
         if input.peek(Token![=]){
             input.parse::<Token![=]>()?;
             let value;
+            let parser = Punctuated::<syn::PathSegment, Token![::]>::parse_separated_nonempty;
             if input.peek(syn::token::Brace){
                 value = AttributeValue::Block(input.parse::<Block>()?);
-            }else{
+            }else if input.peek(syn::Lit){
                 //value = AttributeValue::Str("");
                 //println!("input: {:#?}", input);
                 value = AttributeValue::Literal(input.parse::<Literal>()?);
+            }else {
+                value = AttributeValue::Path(parser(&input)?);//AttributeValue::Literal(input.parse::<Literal>()?);
             }
             return Ok(Attribute::new(name, attr_type, Some(value)));
         }
