@@ -7,7 +7,13 @@ use crate::interface::Hooks;
 
 pub type Renderables = Vec<Arc<dyn Render>>;
 
+//pub type RenderPtr = Arc<dyn Render>;
+
 pub trait Render{
+    //type Type;
+    //fn on(&mut self, _event:&str, _cb: Box<dyn Fn(dyn Render) -> ElementResult<()>>){
+        
+    //}
     fn html(&self)->String{
         let mut buf = vec![];
         self.render(&mut buf).unwrap();
