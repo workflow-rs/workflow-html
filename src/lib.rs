@@ -9,7 +9,9 @@ pub use render::{Render, Renderables, Result, Write};
 pub use escape::{escape_attr, escape_html};
 use std::collections::BTreeMap;
 pub use utils::{Element as WebElement, document, ElementResult};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
 
 #[derive(Debug, Clone)]
 pub enum AttributeValue{
@@ -23,7 +25,21 @@ pub struct Element<T:Render>{
     pub tag:String,
     pub attributes:BTreeMap<String, AttributeValue>,
     pub children:Option<T>,
-    pub reff:Option<(String, String)>
+    pub reff:Option<(String, String)>,
+    pub onclick : Arc<Mutex<Option<Closure::<dyn FnMut(web_sys::MouseEvent)>>>>
+}
+
+impl<T:Render+Clone+'static> Element<T>{
+    pub fn on(self, name:&str, cb:Box<dyn Fn()>)->Self{
+        if name.eq("click"){
+            let mut onclick = self.onclick.lock().unwrap();
+            *onclick = Some(Closure::<dyn FnMut(web_sys::MouseEvent)>::new(Box::new(move |_event: web_sys::MouseEvent| {
+                cb()
+            })));
+        }
+        self
+    }
+    //self_.home_item.element.add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())?;
 }
 
 pub trait ElementDefaults {
@@ -48,6 +64,11 @@ impl<T:Render+Clone+'static> Render for Element<T>{
         renderables.push(Arc::new(self.clone()));
         let mut el = document()
         .create_element(&self.tag)?;
+    
+        let onclick = self.onclick.lock().unwrap();
+        if let Some(onclick) = onclick.as_ref(){
+            el.add_event_listener_with_callback("click", onclick.as_ref().unchecked_ref())?;
+        }
 
         for (key, value) in &self.attributes{
             match value{

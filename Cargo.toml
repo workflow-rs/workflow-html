@@ -28,5 +28,7 @@ features = [
     'Document',
     'Element',
     'Text',
-    'HtmlCollection'
+    'HtmlCollection',
+    'MouseEvent',
+    'CustomEvent'
 ]

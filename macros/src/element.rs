@@ -119,16 +119,17 @@ impl<'a> ToTokens for Element<'a>{
                 }#(#events)*)
             }
         }else{
-            let attributes = self.tag.attributes.to_token_stream();
+            let (attributes, events) = self.tag.attributes.to_token_stream();
             let tag = self.tag.name.to_string();
             let is_fragment = tag.len()==0;
             quote!{
                 workflow_html::Element {
                     is_fragment:#is_fragment,
                     tag:String::from(#tag),
+                    onclick:std::sync::Arc::new(std::sync::Mutex::new(None)),
                     #attributes,
-                    #children
-                }
+                    #children,
+                }#(#events)*
             }
         };
 

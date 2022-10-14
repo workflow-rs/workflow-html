@@ -116,8 +116,9 @@ impl<'a> Attributes<'a>{
         */
         (properties, events)
     }
-    pub fn to_token_stream(&self)->TokenStream{
+    pub fn to_token_stream(&self)->(TokenStream, Vec<TokenStream>){
         let mut attrs = vec![];
+        let mut events = vec![];
         let mut ref_field = quote!(reff:None);
         for attr in &self.list{
             let name = attr.get_name();
@@ -140,6 +141,13 @@ impl<'a> Attributes<'a>{
                 }
                 AttributeType::Event=>{
                     append = false;
+                    if attr.value.is_some(){
+                        events.push(quote!(
+                            .on(#name, Box::new(move ||{
+                                #value
+                            }))
+                        ));
+                    }
                     quote!()
                 }
             };
@@ -149,14 +157,14 @@ impl<'a> Attributes<'a>{
                 ));
             }
         }
-        quote!{
+        (quote!{
             #ref_field,
             attributes:{
                 let mut map = std::collections::BTreeMap::new();
                 #(#attrs)*
                 map
             }
-        }.into()
+        }.into(), events)
     }
 }
 
