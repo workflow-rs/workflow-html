@@ -102,6 +102,27 @@ impl<T:Render+Clone> Render for Vec<T>{
     }
 }
 
+impl<T:Render+Clone> Render for Option<T>{
+    fn render_node(
+        self,
+        parent:&mut Element,
+        map:&mut Hooks,
+        renderables:&mut Renderables
+    )->ElementResult<()>{
+        if let Some(h) = self{
+            h.render_node(parent, map, renderables)?;
+        }
+        Ok(())
+    }
+
+    fn render(&self, w:&mut Vec<String>)->ElementResult<()>{
+        if let Some(h) = self{
+            h.render(w)?;
+        }
+        Ok(())
+    }
+}
+
 
 macro_rules! impl_tuple {
     ($($ident:ident)+) => {

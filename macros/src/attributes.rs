@@ -143,7 +143,7 @@ impl<'a> Attributes<'a>{
                     append = false;
                     if attr.value.is_some(){
                         events.push(quote!(
-                            .on(#name, Box::new(move ||{
+                            .on(#name, Box::new(move |_event, _target|{
                                 #value
                             }))
                         ));

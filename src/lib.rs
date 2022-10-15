@@ -30,11 +30,12 @@ pub struct Element<T:Render>{
 }
 
 impl<T:Render+Clone+'static> Element<T>{
-    pub fn on(self, name:&str, cb:Box<dyn Fn()>)->Self{
+    pub fn on(self, name:&str, cb:Box<dyn Fn(web_sys::MouseEvent, WebElement)>)->Self{
         if name.eq("click"){
             let mut onclick = self.onclick.lock().unwrap();
-            *onclick = Some(Closure::<dyn FnMut(web_sys::MouseEvent)>::new(Box::new(move |_event: web_sys::MouseEvent| {
-                cb()
+            *onclick = Some(Closure::<dyn FnMut(web_sys::MouseEvent)>::new(Box::new(move |event: web_sys::MouseEvent| {
+                let target = event.target().unwrap().dyn_into::<WebElement>().unwrap();
+                cb(event, target)
             })));
         }
         self

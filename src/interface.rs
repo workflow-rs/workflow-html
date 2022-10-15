@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 pub use crate::utils::{Element, document, ElementResult};
 use crate::render::{Render, Renderables};
 use crate::WebElement;
-use std::sync::Arc;
 pub type Hooks = BTreeMap<String, Element>;
 
 #[derive(Clone)]
@@ -47,12 +46,12 @@ impl Html{
 
 impl Render for Html{
     fn render_node(
-        self,
+        mut self,
         parent:&mut WebElement,
         map:&mut Hooks,
         renderables:&mut Renderables
     )->ElementResult<()>{
-        renderables.push(Arc::new(self.clone()));
+        renderables.append(self.renderables.as_mut());
         let mut hooks = self.hooks().clone();
         map.append(&mut hooks);
         self.inject_into(&parent)?;
