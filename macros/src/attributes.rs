@@ -204,7 +204,12 @@ impl<'a> Attribute<'a>{
             Some(value)=>{
                 match value {
                     AttributeValue::Block(v)=>{
-                        (&v.stmts[0]).into_token_stream()
+                        if v.stmts.len() > 1{
+                            v.to_token_stream()
+                        }else{
+                            (&v.stmts[0]).into_token_stream()
+                        }
+                        
                     }
                     AttributeValue::Literal(v)=>{
                         quote!(#v).into_token_stream()
