@@ -1,4 +1,3 @@
-//use std::sync::Arc;
 use proc_macro2::{TokenStream, Ident, Literal};
 //use proc_macro::TokenTree;
 use quote::{quote, ToTokens};
