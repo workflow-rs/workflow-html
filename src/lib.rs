@@ -121,6 +121,14 @@ impl<T:Render+Clone+'static> Render for Element<T>{
         }
         Ok(())
     }
+
+    fn remove_event_listeners(&self)->ElementResult<()>{
+        *self.onclick.lock().unwrap() = None;
+        if let Some(children) = &self.children{
+            children.remove_event_listeners()?;
+        }
+        Ok(())
+    }
 }
 
 

@@ -3,6 +3,7 @@ pub use crate::utils::{Element, document, ElementResult};
 use crate::render::{Render, Renderables};
 use crate::WebElement;
 pub type Hooks = BTreeMap<String, Element>;
+//use workflow_log::log_trace;
 
 #[derive(Clone)]
 pub struct Html{
@@ -10,8 +11,6 @@ pub struct Html{
     pub hooks: Hooks,
     pub renderables: Renderables
 }
-
-//pub type Html_ = Html<dyn Renderable>;
 
 impl Html{
     pub fn new(
@@ -41,6 +40,12 @@ impl Html{
         }
         Ok(())
     }
+    pub fn remove_event_listeners(&self)-> ElementResult<()> {
+        for root in &self.renderables {
+            root.remove_event_listeners()?;
+        }
+        Ok(())
+    }
 }
 
 
@@ -61,4 +66,19 @@ impl Render for Html{
     fn render(&self, _w:&mut Vec<String>)->ElementResult<()>{
         Ok(())
     }
+
+    fn remove_event_listeners(&self)-> ElementResult<()> {
+        for root in &self.renderables {
+            root.remove_event_listeners()?;
+        }
+        Ok(())
+    }
 }
+
+/*
+impl Drop for Html{
+    fn drop(&mut self) {
+        log_trace!("HTML Drop: {:?}", self.roots[0].get_attribute("class"));
+    }
+}
+*/

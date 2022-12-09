@@ -54,6 +54,10 @@ pub trait Render{
     }
 
     fn render(&self, _w: &mut Vec<String>)->ElementResult<()>;
+
+    fn remove_event_listeners(&self)->ElementResult<()>{
+        Ok(())
+    }
 }
 
 
