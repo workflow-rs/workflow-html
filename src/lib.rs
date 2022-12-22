@@ -1,3 +1,22 @@
+//!
+//! [`workflow-html`](self) crate provides HTML templating macros that return
+//! an [`Html`] structure containing a collection of DOM elements as well as retained
+//! Rust structures supplied to the template. This ensures the lifetime of Rust
+//! structures for the period [`Html`] structure is kept alive. Dropping [`Html`] 
+//! structure destroys all retained DOM elements as well as Rust structures.
+//! 
+//! By retaining Rust structures this API ensures that elements and callbacks
+//! created by Rust-based HTML elements are retained for the duration of the
+//! Html litefime.
+//! 
+//! In addition, HTML elements marked with `@name` attributes are collected into
+//! a separate `HashMap` allowing client to side-access them for external bindings.
+//! 
+//! This crate works in conjunction with [`workflow-ux`](https://crates.io/crates/workflow-ux)
+//! allowing Rust HTML Form binding to HTML.
+//! 
+//! 
+
 pub mod render;
 pub mod escape;
 pub mod utils;
